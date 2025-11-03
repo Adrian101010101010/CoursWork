@@ -60,9 +60,9 @@ final class AuthViewController: UIViewController {
         weightField.inputView = weightPicker
         
         actionButton.setTitle("Увійти", for: .normal)
-        actionButton.tintColor = .white
+        actionButton.tintColor = .clear
         actionButton.titleLabel?.font = .boldSystemFont(ofSize: 18)
-        actionButton.backgroundColor = .systemBlue
+        actionButton.configuration = .prominentGlass()
         actionButton.layer.cornerRadius = 12
         actionButton.addTarget(self, action: #selector(handleAuth), for: .touchUpInside)
         
@@ -143,7 +143,11 @@ final class AuthViewController: UIViewController {
     
     @objc private func handleAuth() {
         dismissKeyboard()
-        showAlert(isLoginMode ? "Вхід виконано ✅" : "Реєстрація успішна 🎉")
+        showAlert(isLoginMode ? "Вхід виконано ✅" : "Реєстрація успішна 🎉"){
+            let catalogVC = CatalogViewController()
+            catalogVC.modalPresentationStyle = .fullScreen
+            self.present(catalogVC, animated: true)
+        }
     }
     
     @objc private func toggleMode() {
@@ -162,14 +166,16 @@ final class AuthViewController: UIViewController {
         )
     }
     
-    private func showAlert(_ message: String) {
+    private func showAlert(_ message: String, completion: (() -> Void)? = nil) {
         let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
+            completion?()
+        }))
         present(alert, animated: true)
     }
 }
 
-private extension UIView {
+extension UIView {
     func applyGradient(colors: [CGColor]) {
         let gradientLayer = CAGradientLayer()
         gradientLayer.colors = colors

@@ -7,7 +7,7 @@
 
 final class EmailAuthStrategy: AuthStrategy {
     func authenticate(email: String, password: String, completion: @escaping (Bool, String?) -> Void) {
-        if email == "test@mail.com" && password == "1234" {
+        if email == "Test@mail.com" && password == "1234" {
             completion(true, nil)
         } else {
             completion(false, "Невірний email або пароль.")
