@@ -146,7 +146,7 @@ final class AuthViewController: UIViewController {
         showAlert(isLoginMode ? "Вхід виконано ✅" : "Реєстрація успішна 🎉"){
             let catalogVC = CatalogViewController()
             catalogVC.modalPresentationStyle = .fullScreen
-            self.present(catalogVC, animated: true)
+            self.navigationController?.pushViewController(catalogVC, animated: true)
         }
     }
     
