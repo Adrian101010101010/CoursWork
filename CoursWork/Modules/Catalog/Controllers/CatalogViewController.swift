@@ -7,7 +7,7 @@
 
 import UIKit
 
-final class CatalogViewController: UIViewController, UITableViewDataSource {
+final class CatalogViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
     private let tableView = UITableView()
     private let filterView = CatalogFilterView()
     private let viewModel = CatalogViewModel(repository: SectionRepository())
@@ -26,6 +26,7 @@ final class CatalogViewController: UIViewController, UITableViewDataSource {
         filterView.backgroundColor = .clear
         tableView.backgroundColor = .clear
         tableView.dataSource = self
+        tableView.delegate = self
         tableView.register(CatalogItemCell.self, forCellReuseIdentifier: CatalogItemCell.identifier)
 
         filterView.translatesAutoresizingMaskIntoConstraints = false
@@ -64,5 +65,13 @@ final class CatalogViewController: UIViewController, UITableViewDataSource {
         cell.configure(with: viewModel.getSections()[indexPath.row])
         return cell
     }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        print("✅ Обрано секцію:", viewModel.getSections()[indexPath.row].name)
+        let section = viewModel.getSections()[indexPath.row]
+        let reservationVC = ReservationViewController(section: section)
+        navigationController?.pushViewController(reservationVC, animated: true)
+    }
+
 }
 
