@@ -19,7 +19,6 @@ final class CatalogItemCell: UITableViewCell {
     
     func configure(with section: GymSection) {
         backgroundColor = .clear
-        // Просто підключаємо SwiftUI-вʼюшку через UIHostingConfiguration
         self.contentConfiguration = UIHostingConfiguration {
             CatalogItemView(section: section)
                 .padding(.vertical, 6)
@@ -73,7 +72,6 @@ struct CatalogItemView: View {
     
     private var liquidGlassBackground: some View {
             ZStack {
-                // 🟣 "Liquid" кольори (анімований градієнт)
                 LinearGradient(
                     colors: animate ?
                         [Color.blue.opacity(0.25), Color.purple.opacity(0.25), Color.teal.opacity(0.25)] :
@@ -85,18 +83,16 @@ struct CatalogItemView: View {
                 .animation(.easeInOut(duration: 6).repeatForever(autoreverses: true), value: animate)
                 .onAppear { animate.toggle() }
 
-                // 🧊 Скляний ефект Apple (розмиття)
                 Rectangle()
-                    .fill(.ultraThinMaterial) // або .regularMaterial / .glassBackgroundEffect()
+                    .fill(.ultraThinMaterial)
                     .blendMode(.overlay)
 
-                // ✨ Легке сяйво
                 LinearGradient(
                     colors: [Color.white.opacity(0.15), .clear],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
             }
-            .compositingGroup() // додає глибину
+            .compositingGroup()
         }
 }
