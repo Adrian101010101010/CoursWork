@@ -144,9 +144,9 @@ final class AuthViewController: UIViewController {
     @objc private func handleAuth() {
         dismissKeyboard()
         showAlert(isLoginMode ? "Вхід виконано ✅" : "Реєстрація успішна 🎉"){
-            let catalogVC = CatalogViewController()
-            catalogVC.modalPresentationStyle = .fullScreen
-            self.navigationController?.pushViewController(catalogVC, animated: true)
+            let mainTabBar = MainTabBarController()
+            mainTabBar.modalPresentationStyle = .fullScreen
+            self.present(mainTabBar, animated: true)
         }
     }
     

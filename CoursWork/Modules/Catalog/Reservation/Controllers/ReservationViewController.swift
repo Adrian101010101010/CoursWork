@@ -70,6 +70,14 @@ final class ReservationViewController: UIViewController {
         )
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
+        
+        let user = UserRepository.shared.getUserProfile()
+        switch user.cardType {
+        case .standard: UserRepository.shared.updateBonusPoints(by: 10)
+        case .premium: UserRepository.shared.updateBonusPoints(by: 20)
+        case .corporate: UserRepository.shared.updateBonusPoints(by: 15)
+        }
+
     }
 
     private func formattedDate(_ date: Date) -> String {
