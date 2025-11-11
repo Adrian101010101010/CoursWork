@@ -143,10 +143,33 @@ final class AuthViewController: UIViewController {
     
     @objc private func handleAuth() {
         dismissKeyboard()
-        showAlert(isLoginMode ? "Вхід виконано ✅" : "Реєстрація успішна 🎉"){
-            let mainTabBar = MainTabBarController()
-            mainTabBar.modalPresentationStyle = .fullScreen
-            self.present(mainTabBar, animated: true)
+        
+        guard let email = emailField.text,
+              let password = passwordField.text else {
+            showAlert(message: "Введіть email і пароль")
+            return
+        }
+
+        if isLoginMode {
+            AuthService.shared.login(email: email, password: password) { [weak self] result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(let userIn):
+                        UserDefaults.standard.set(userIn.token, forKey: "idToken")
+                        
+                        self?.showAlert(title: "Вхід виконано", message: "Ласкаво просимо!") {
+                            let mainTabBar = MainTabBarController()
+                            mainTabBar.modalPresentationStyle = .fullScreen
+                            self?.present(mainTabBar, animated: true)
+                        }
+                        
+                    case .failure(let error):
+                        self?.showAlert(title: "Помилка входу", message: error.localizedDescription)
+                    }
+                }
+            }
+        } else {
+            registerButtonTapped()
         }
     }
     
@@ -166,8 +189,9 @@ final class AuthViewController: UIViewController {
         )
     }
     
-    private func showAlert(_ message: String, completion: (() -> Void)? = nil) {
-        let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+    // Unified alert helper
+    private func showAlert(title: String? = nil, message: String, completion: (() -> Void)? = nil) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
             completion?()
         }))
@@ -221,5 +245,50 @@ extension AuthViewController: UIPickerViewDataSource, UIPickerViewDelegate {
         if pickerView == agePicker { ageField.text = "\(row + 18)" }
         if pickerView == heightPicker { heightField.text = "\(row + 140)" }
         if pickerView == weightPicker { weightField.text = "\(row + 40)" }
+    }
+    
+    private func registerButtonTapped() {
+        guard let email = emailField.text,
+              let password = passwordField.text,
+              let firstName = firstNameField.text,
+              let lastName = lastNameField.text,
+              let age = Int(ageField.text ?? "0"),
+              let height = Int(heightField.text ?? "0"),
+              let weight = Int(weightField.text ?? "0") else {
+            showAlert(title: "Помилка", message: "Будь ласка, заповніть усі поля")
+            return
+        }
+
+        AuthService.shared.register(
+            email: email,
+            password: password,
+            firstName: firstName,
+            name: lastName,
+            age: age,
+            height: height,
+            weight: weight
+        ) { [weak self] result in
+            switch result {
+            case .success:
+                AuthService.shared.login(email: email, password: password) { loginResult in
+                    DispatchQueue.main.async {
+                        switch loginResult {
+                        case .success:
+                            self?.showAlert(title: "Реєстрація та вхід успішні", message: "Гарних тренувань")
+                            let mainTabBar = MainTabBarController()
+                            mainTabBar.modalPresentationStyle = .fullScreen
+                            self?.present(mainTabBar, animated: true)
+                        case .failure(let error):
+                            self?.showAlert(title: "Помилка входу після реєстрації", message: error.localizedDescription)
+                        }
+                    }
+                }
+            case .failure(let error):
+                DispatchQueue.main.async {
+                    self?.showAlert(title: "Помилка реєстрації", message: error.localizedDescription)
+                }
+            }
+        }
+
     }
 }
