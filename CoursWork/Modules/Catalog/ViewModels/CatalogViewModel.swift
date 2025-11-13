@@ -9,23 +9,35 @@ import Foundation
 
 final class CatalogViewModel {
     private let repository: SectionRepositoryProtocol
-    private var sections: [GymSection] = []
-    private var currentFilter: FilterStrategy?
-
-    var onUpdate: (() -> Void)?
-
+    private var allSections: [GymSection] = []      // усі секції з сервера
+    private var filteredSections: [GymSection] = [] // фільтровані
+    
     init(repository: SectionRepositoryProtocol) {
         self.repository = repository
-        self.sections = repository.fetchAllSections()
+    }
+
+    func fetchSections(completion: @escaping () -> Void) {
+        repository.fetchAllSections { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let sections):
+                    self?.allSections = sections
+                    self?.filteredSections = sections
+                    completion()
+                case .failure(let error):
+                    print("Error fetching sections:", error)
+                    completion()
+                }
+            }
+        }
     }
 
     func applyFilter(_ strategy: FilterStrategy) {
-        currentFilter = strategy
-        sections = strategy.filter(sections: repository.fetchAllSections())
-        onUpdate?()
+        filteredSections = strategy.filter(sections: allSections)
     }
 
     func getSections() -> [GymSection] {
-        return sections
+        return filteredSections
     }
 }
+

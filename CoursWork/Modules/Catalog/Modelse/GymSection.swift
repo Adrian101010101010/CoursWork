@@ -7,20 +7,21 @@
 
 import Foundation
 
-struct GymSection {
-    let id: UUID
+struct GymSection: Codable, Identifiable {
+    let id: String
     let name: String
     let sportType: SportType
     let difficulty: DifficultyLevel
     let minAge: Int
     let maxAge: Int
     let isPremium: Bool
+    let createdAt: String
 }
 
-enum SportType: String, CaseIterable {
-    case all = "Усе"
-    case yoga = "Йога"
-    case football = "Футбол"
-    case fitness = "Фітнес"
-    case swimming = "Плавання"
+enum SportType: String, Codable, CaseIterable {
+    case all = "all"
+    case yoga = "yoga"
+    case football = "football"
+    case fitness = "fitness"
+    case swimming = "swimming"
 }
