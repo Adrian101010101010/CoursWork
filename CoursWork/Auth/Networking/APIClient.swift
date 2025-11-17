@@ -41,6 +41,7 @@ final class APIClient {
                 let decoded = try JSONDecoder().decode(T.self, from: data)
                 if let userIn = decoded as? UserIn {
                     UserDefaults.standard.set(userIn.token, forKey: "idToken")
+                    UserDefaults.standard.set(userIn.uid, forKey: "id")
                 }
                 completion(.success(decoded))
             } catch {

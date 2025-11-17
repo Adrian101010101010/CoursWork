@@ -19,14 +19,4 @@ final class ReservationViewModel {
     init(section: GymSection) {
         self.section = section
     }
-
-    func reserve(for name: String, date: Date, timeSlot: String) -> Reservation {
-        return Reservation(
-            id: UUID(),
-            section: section,
-            date: date,
-            timeSlot: timeSlot,
-            userName: name
-        )
-    }
 }
