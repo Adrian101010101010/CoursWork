@@ -5,8 +5,8 @@
 //  Created by Admin on 30.10.2025.
 //
 
-enum DifficultyLevel: String, CaseIterable {
-    case beginner = "Початківець"
-    case intermediate = "Середній"
-    case advanced = "Просунутий"
+enum DifficultyLevel: String, Codable {
+    case beginner = "beginner"
+    case intermediate = "intermediate"
+    case advanced = "advanced"
 }

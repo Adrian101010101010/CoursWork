@@ -6,5 +6,5 @@
 //
 
 protocol SectionRepositoryProtocol {
-    func fetchAllSections() -> [GymSection]
+    func fetchAllSections(completion: @escaping (Result<[GymSection], Error>) -> Void)
 }
