@@ -54,6 +54,7 @@ final class CreateSectionFormView: UIView, UIPickerViewDelegate, UIPickerViewDat
         subscriptionPicker.dataSource = self
 
         sportTypeField.inputView = sportTypePicker
+        difficultyField.inputView = difficultyPicker
         subscriptionTypeField.inputView = subscriptionPicker
         subscriptionTypeField.isHidden = true
 
