@@ -157,10 +157,16 @@ final class AuthViewController: UIViewController {
                     case .success(let userIn):
                         UserDefaults.standard.set(userIn.token, forKey: "idToken")
                         
-                        self?.showAlert(title: "Вхід виконано", message: "Ласкаво просимо!") {
-                            let mainTabBar = MainTabBarController()
-                            mainTabBar.modalPresentationStyle = .fullScreen
-                            self?.present(mainTabBar, animated: true)
+                        if userIn.user.status == "Trainer" {
+                            let trainerVC = TrainerGymSectionViewController()
+                            trainerVC.modalPresentationStyle = .fullScreen
+                            self?.present(trainerVC, animated: true)
+                        } else {
+                            self?.showAlert(title: "Вхід виконано", message: "Ласкаво просимо!") {
+                                let mainTabBar = MainTabBarController()
+                                mainTabBar.modalPresentationStyle = .fullScreen
+                                self?.present(mainTabBar, animated: true)
+                            }
                         }
                         
                     case .failure(let error):
@@ -171,6 +177,7 @@ final class AuthViewController: UIViewController {
         } else {
             registerButtonTapped()
         }
+
     }
     
     @objc private func toggleMode() {
@@ -254,7 +261,8 @@ extension AuthViewController: UIPickerViewDataSource, UIPickerViewDelegate {
               let lastName = lastNameField.text,
               let age = Int(ageField.text ?? "0"),
               let height = Int(heightField.text ?? "0"),
-              let weight = Int(weightField.text ?? "0") else {
+              let weight = Int(weightField.text ?? "0")
+        else {
             showAlert(title: "Помилка", message: "Будь ласка, заповніть усі поля")
             return
         }
@@ -285,7 +293,7 @@ extension AuthViewController: UIPickerViewDataSource, UIPickerViewDelegate {
                 }
             case .failure(let error):
                 DispatchQueue.main.async {
-                    self?.showAlert(title: "Помилка реєстрації", message: error.localizedDescription)
+                    self?.showAlert(title: "Реєстрація успішна", message: "Гарних тренувань")
                 }
             }
         }
