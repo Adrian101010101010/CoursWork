@@ -17,6 +17,7 @@ struct GymSection: Codable, Identifiable {
     let isPremium: Bool
     let createdAt: String
     let price: Double
+    let createdBy: String
 }
 
 enum SportType: String, Codable, CaseIterable {

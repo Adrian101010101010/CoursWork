@@ -43,7 +43,7 @@ final class AuthService {
         weight: Int,
         completion: @escaping (Result<String, Error>) -> Void
     ) {
-        guard let url = URL(string: "https://us-central1-curce-work-backend.cloudfunctions.net/createUser") else { return }
+        guard let url = URL(string: "https://us-central1-curce-work-backend.cloudfunctions.net/createUsers/register") else { return }
 
         let body: [String: Any] = [
             "email": email,
@@ -54,6 +54,7 @@ final class AuthService {
             "height": height,
             "weight": weight
         ]
+        print("BODY:", body)
 
         APIClient.shared.sendRequest(url: url, body: body) { (result: Result<RegisterResponse, Error>) in
             switch result {
@@ -64,5 +65,4 @@ final class AuthService {
             }
         }
     }
-
 }

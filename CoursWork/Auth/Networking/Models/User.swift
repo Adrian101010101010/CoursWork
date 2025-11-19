@@ -12,4 +12,5 @@ struct User: Codable {
     let age: Int
     let height: Int
     let weight: Int
+    let status: String
 }
