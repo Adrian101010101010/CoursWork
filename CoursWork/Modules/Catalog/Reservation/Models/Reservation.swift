@@ -7,10 +7,10 @@
 
 import Foundation
 
-struct Reservation {
-    let id: UUID
-    let section: GymSection
-    let date: Date
-    let timeSlot: String
+struct Reservation: Codable {
+    let sectionId: String
     let userName: String
+    let date: String
+    let timeSlot: String
+    let createdAt: String
 }

@@ -7,8 +7,8 @@
 
 import Foundation
 
-struct SubscriptionOffer {
-    let id: UUID
+struct SubscriptionOffer: Codable, Identifiable {
+    let id: String
     let name: String
     let type: String
     let price: String

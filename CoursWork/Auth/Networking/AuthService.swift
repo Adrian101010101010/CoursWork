@@ -25,6 +25,7 @@ final class AuthService {
             case .success(let wrapper):
                 let userIn = UserIn(uid: wrapper.uid, token: wrapper.token, user: wrapper.user)
                 UserDefaults.standard.set(userIn.token, forKey: "idToken")
+                UserDefaults.standard.set(userIn.uid, forKey: "id")
                 completion(.success(userIn))
             case .failure(let error):
                 completion(.failure(error))

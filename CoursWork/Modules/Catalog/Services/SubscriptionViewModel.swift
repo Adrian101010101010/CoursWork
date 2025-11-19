@@ -1,15 +1,47 @@
 import Foundation
 
 final class SubscriptionViewModel {
-    private(set) var offers: [SubscriptionOffer] = [
-        SubscriptionOffer(id: UUID(), name: "Разовий абонемент", type: "Разовий", price: "150₴", perks: ["Доступ на 1 тренування"], isPremium: false),
-        SubscriptionOffer(id: UUID(), name: "Місячний абонемент", type: "Місячний", price: "450₴", perks: ["Безліміт на місяць", "1 гість"], isPremium: false),
-        SubscriptionOffer(id: UUID(), name: "Преміум абонемент", type: "Місячний", price: "950₴", perks: ["VIP-зона", "Групові заняття", "2 гостя"], isPremium: true),
-        SubscriptionOffer(id: UUID(), name: "Корпоративний пакет", type: "Корпоративний", price: "3500₴", perks: ["10 осіб", "VIP-зони", "Індивідуальні тренери"], isPremium: true)
-    ]
+
+    private(set) var offers: [SubscriptionOffer] = []
+
     var onUpdate: (() -> Void)?
-    
+
+    private let baseURL = "https://us-central1-curce-work-backend.cloudfunctions.net/subscription"
+
+    func fetchOffers() {
+        guard let url = URL(string: "\(baseURL)/subscriptions/get") else {
+            print("❌ Invalid URL")
+            return
+        }
+
+        URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
+            if let error = error {
+                print("❌ Error loading offers:", error)
+                return
+            }
+
+            guard let data = data else {
+                print("❌ Empty response")
+                return
+            }
+
+            do {
+                let offers = try JSONDecoder().decode([SubscriptionOffer].self, from: data)
+
+                DispatchQueue.main.async {
+                    self?.offers = offers
+                    self?.onUpdate?()
+                }
+
+            } catch {
+                print("❌ JSON decode error:", error)
+                print(String(data: data, encoding: .utf8) ?? "")
+            }
+
+        }.resume()
+    }
+
     func getOffers() -> [SubscriptionOffer] {
-        offers
+        return offers
     }
 }
