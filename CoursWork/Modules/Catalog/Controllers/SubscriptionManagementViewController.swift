@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import PassKit
 
 final class SubscriptionManagementViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
     private let tableView = UITableView()
@@ -18,20 +19,6 @@ final class SubscriptionManagementViewController: UIViewController, UITableViewD
         view.backgroundColor = .systemBackground
         setupUI()
         bindViewModel()
-        createSubscriptionOffer(
-            name: "Тестовий абонемент",
-            type: "Місячний",
-            price: "200₴",
-            perks: ["Доступ до залу", "2 тренування"],
-            isPremium: false
-        ) { result in
-            switch result {
-            case .success(let offer):
-                print("Created offer:", offer)
-            case .failure(let error):
-                print("Error:", error)
-            }
-        }
     }
 
     private func setupUI() {
@@ -69,7 +56,6 @@ final class SubscriptionManagementViewController: UIViewController, UITableViewD
         viewModel.fetchOffers()
     }
 
-    // MARK: - TableView
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         viewModel.getOffers().count
     }
@@ -82,74 +68,126 @@ final class SubscriptionManagementViewController: UIViewController, UITableViewD
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let offer = viewModel.getOffers()[indexPath.row]
+        
         let alert = UIAlertController(
             title: "Вибрана пропозиція",
             message: "\(offer.name)\n(\(offer.type))\nЦіна: \(offer.price)\nПереваги: \(offer.perks.joined(separator: ", "))",
             preferredStyle: .alert
         )
+        
+        alert.addAction(UIAlertAction(title: "Купити", style: .default, handler: { [weak self] _ in
+            self?.purchaseOffer(offer: offer)
+        }))
+        
+        alert.addAction(UIAlertAction(title: "Відміна", style: .cancel))
+        
+        present(alert, animated: true)
+    }
+
+    private func purchaseOffer(offer: SubscriptionOffer) {
+        guard let userId = UserDefaults.standard.string(forKey: "id") else {
+            showAlert(title: "Помилка", message: "Не знайдено користувача")
+            return
+        }
+        
+        let priceValue = offer.price.replacingOccurrences(of: "₴", with: "").replacingOccurrences(of: "$", with: "")
+        guard let priceDouble = Double(priceValue) else { return }
+        let paymentAmount = NSDecimalNumber(value: priceDouble * 1)
+
+        let request = PKPaymentRequest()
+        request.merchantIdentifier = "your.merchant.id" 
+        request.supportedNetworks = [.visa, .masterCard, .amex]
+        request.merchantCapabilities = .capability3DS
+        request.countryCode = "UA"
+        request.currencyCode = "UAH"
+
+        request.paymentSummaryItems = [
+            PKPaymentSummaryItem(label: offer.name, amount: paymentAmount)
+        ]
+
+        if let paymentVC = PKPaymentAuthorizationViewController(paymentRequest: request) {
+            paymentVC.delegate = self
+            present(paymentVC, animated: true)
+        } else {
+            showAlert(title: "Помилка", message: "Неможливо ініціювати Apple Pay")
+        }
+    }
+
+    private func showAlert(title: String, message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
     }
-    
-    
-    private let baseURL = "https://us-central1-curce-work-backend.cloudfunctions.net/subscription"
 
-        func createSubscriptionOffer(
-            name: String,
-            type: String,
-            price: String,
-            perks: [String],
-            isPremium: Bool,
-            completion: @escaping (Result<SubscriptionOffer, Error>) -> Void
-        ) {
-
-            guard let url = URL(string: "\(baseURL)/subscriptions/create") else {
-                completion(.failure(NSError(domain: "", code: 0,
-                    userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
-                return
-            }
-
-            guard let token = UserDefaults.standard.string(forKey: "idToken") else {
-                completion(.failure(NSError(domain: "", code: 401,
-                    userInfo: [NSLocalizedDescriptionKey: "Unauthorized: No token"])))
-                return
-            }
-
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-            let body: [String: Any] = [
-                "name": name,
-                "type": type,
-                "price": price,
-                "perks": perks,
-                "isPremium": isPremium
-            ]
-
-            request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-
-            URLSession.shared.dataTask(with: request) { data, response, error in
-
-                if let error = error {
-                    completion(.failure(error))
-                    return
-                }
-
-                guard let data = data else {
-                    completion(.failure(NSError(domain: "", code: 0,
-                        userInfo: [NSLocalizedDescriptionKey: "No data"])))
-                    return
-                }
-
-                do {
-                    let offer = try JSONDecoder().decode(SubscriptionOffer.self, from: data)
-                    completion(.success(offer))
-                } catch {
-                    completion(.failure(error))
-                }
-
-            }.resume()
+    private func createBooking(offer: SubscriptionOffer, completion: @escaping (Bool) -> Void) {
+        guard let userId = UserDefaults.standard.string(forKey: "id") else {
+            completion(false)
+            return
         }
+
+        let urlString = "https://us-central1-curce-work-backend.cloudfunctions.net/createSeasonTicketBooking"
+        guard let url = URL(string: urlString) else { completion(false); return }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: Any] = [
+            "userId": userId,
+            "offerId": offer.id,
+            "name": offer.name,
+            "type": offer.type,
+            "price": offer.price,
+            "perks": offer.perks
+        ]
+
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("Booking error:", error)
+                    completion(false)
+                    return
+                }
+
+                guard let data = data,
+                      let responseDict = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      responseDict["id"] != nil else {
+                    completion(false)
+                    return
+                }
+
+                completion(true)
+            }
+        }.resume()
+    }
+
+}
+extension SubscriptionManagementViewController: PKPaymentAuthorizationViewControllerDelegate {
+    func paymentAuthorizationViewController(_ controller: PKPaymentAuthorizationViewController,
+                                            didAuthorizePayment payment: PKPayment,
+                                            handler completion: @escaping (PKPaymentAuthorizationResult) -> Void) {
+        
+        guard let selectedRow = tableView.indexPathForSelectedRow?.row else {
+            completion(PKPaymentAuthorizationResult(status: .failure, errors: nil))
+            return
+        }
+        let offer = viewModel.getOffers()[selectedRow]
+
+        createBooking(offer: offer) { success in
+            if success {
+                let bonusPointsToAdd = Int((Double(offer.price.replacingOccurrences(of: "₴", with: "")) ?? 50) * 0.7)
+                UserRepository.shared.updateBonusPoints(by: bonusPointsToAdd)
+
+                completion(PKPaymentAuthorizationResult(status: .success, errors: nil))
+            } else {
+                completion(PKPaymentAuthorizationResult(status: .failure, errors: nil))
+            }
+        }
+    }
+
+    func paymentAuthorizationViewControllerDidFinish(_ controller: PKPaymentAuthorizationViewController) {
+        controller.dismiss(animated: true)
+    }
 }

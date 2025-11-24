@@ -13,6 +13,7 @@ struct Booking: Codable {
     let date: String
     let timeSlot: String
     let sectionId: String
+    let sectionName: String?
 }
 
 final class BookingsView: UIView, UITableViewDelegate, UITableViewDataSource {

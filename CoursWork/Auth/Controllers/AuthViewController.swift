@@ -278,6 +278,13 @@ extension AuthViewController: UIPickerViewDataSource, UIPickerViewDelegate {
         ) { [weak self] result in
             switch result {
             case .success:
+                UserDefaults.standard.set(email, forKey: "email")
+                UserDefaults.standard.set(firstName, forKey: "firstName")
+                UserDefaults.standard.set(lastName, forKey: "name")
+                UserDefaults.standard.set(age, forKey: "age")
+                UserDefaults.standard.set(height, forKey: "height")
+                UserDefaults.standard.set(weight, forKey: "weight")
+                
                 AuthService.shared.login(email: email, password: password) { loginResult in
                     DispatchQueue.main.async {
                         switch loginResult {
