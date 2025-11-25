@@ -23,7 +23,6 @@ final class CreateSectionFormView: UIView, UIPickerViewDelegate, UIPickerViewDat
 
     private let perksTextView = UITextView()
     private let isPremiumSwitch = UISwitch()
-    private let isSubscriptionSwitch = UISwitch()
     private let submitButton = UIButton(type: .system)
 
     private let sportTypePicker = UIPickerView()
@@ -32,10 +31,6 @@ final class CreateSectionFormView: UIView, UIPickerViewDelegate, UIPickerViewDat
 
     private let difficultyPicker = UIPickerView()
     private let difficultyTypes = Difficulty.allCases.map { $0.rawValue }
-    
-    private let subscriptionPicker = UIPickerView()
-    private let subscriptionTypes = ["week", "month", "year"]
-    private let subscriptionTypeField = UITextField()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -50,13 +45,9 @@ final class CreateSectionFormView: UIView, UIPickerViewDelegate, UIPickerViewDat
         sportTypePicker.dataSource = self
         difficultyPicker.delegate = self
         difficultyPicker.dataSource = self
-        subscriptionPicker.delegate = self
-        subscriptionPicker.dataSource = self
 
         sportTypeField.inputView = sportTypePicker
         difficultyField.inputView = difficultyPicker
-        subscriptionTypeField.inputView = subscriptionPicker
-        subscriptionTypeField.isHidden = true
 
         perksTextView.layer.borderWidth = 1
         perksTextView.layer.borderColor = UIColor.systemGray4.cgColor
@@ -77,11 +68,7 @@ final class CreateSectionFormView: UIView, UIPickerViewDelegate, UIPickerViewDat
             labeledField("Min Age", minAgeField),
             labeledField("Max Age", maxAgeField),
             labeledField("Price", priceField),
-            perksLabel,
-            perksTextView,
             labeledSwitch("Premium", isPremiumSwitch),
-            labeledSwitch("Subscription", isSubscriptionSwitch),
-            labeledField("Sub. Type", subscriptionTypeField),
             submitButton
         ])
 
@@ -96,7 +83,7 @@ final class CreateSectionFormView: UIView, UIPickerViewDelegate, UIPickerViewDat
             stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20)
         ])
 
-        [nameField, sportTypeField, difficultyField, minAgeField, maxAgeField, priceField, subscriptionTypeField]
+        [nameField, sportTypeField, difficultyField, minAgeField, maxAgeField, priceField]
             .forEach {
                 $0.borderStyle = .roundedRect
                 $0.heightAnchor.constraint(equalToConstant: 38).isActive = true
@@ -109,31 +96,27 @@ final class CreateSectionFormView: UIView, UIPickerViewDelegate, UIPickerViewDat
         submitButton.heightAnchor.constraint(equalToConstant: 45).isActive = true
         submitButton.addTarget(self, action: #selector(submitTapped), for: .touchUpInside)
 
-        isSubscriptionSwitch.addTarget(self, action: #selector(toggleSubscription), for: .valueChanged)
     }
 
-    @objc private func toggleSubscription() {
-        subscriptionTypeField.isHidden = !isSubscriptionSwitch.isOn
-    }
+    
 
     func numberOfComponents(in pickerView: UIPickerView) -> Int { 1 }
 
     func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
         if pickerView == sportTypePicker { return sportTypes.count }
         if pickerView == difficultyPicker { return difficultyTypes.count }
-        return subscriptionTypes.count
+        return 0
     }
 
     func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
         if pickerView == sportTypePicker { return sportTypes[row] }
         if pickerView == difficultyPicker { return difficultyTypes[row] }
-        return subscriptionTypes[row]
+        return nil
     }
 
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
         if pickerView == sportTypePicker { sportTypeField.text = sportTypes[row] }
         else if pickerView == difficultyPicker { difficultyField.text = difficultyTypes[row] }
-        else { subscriptionTypeField.text = subscriptionTypes[row] }
     }
 
     @objc private func submitTapped() {
@@ -152,31 +135,6 @@ final class CreateSectionFormView: UIView, UIPickerViewDelegate, UIPickerViewDat
         let perks = perksTextView.text
             .split(separator: ",")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-
-        if isSubscriptionSwitch.isOn {
-            guard let type = subscriptionTypeField.text else {
-                showToast("Оберіть тип підписки!", isError: true)
-                return
-            }
-
-            NetworkManager.shared.createSubscriptionOffer(
-                name: name,
-                type: type,
-                price: String(price),
-                perks: perks,
-                isPremium: isPremiumSwitch.isOn
-            ) { result in
-                DispatchQueue.main.async {
-                    switch result {
-                    case .success:
-                        self.showToast("Subscription created!", isError: false)
-                    case .failure:
-                        self.showToast("Помилка створення!", isError: true)
-                    }
-                }
-            }
-            return
-        }
 
         let sportType = sportTypeField.text ?? "fitness"
 

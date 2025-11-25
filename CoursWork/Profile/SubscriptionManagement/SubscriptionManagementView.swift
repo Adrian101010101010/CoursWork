@@ -14,8 +14,10 @@ final class SubscriptionManagementView: UIView {
     private let cardTypeLabel = UILabel()
     private let bonusLabel = UILabel()
     private let perksLabel = UILabel()
-    
+    private let scrollView = UIScrollView()
+    private let contentStack = UIStackView()
     private let bookingsStack = UIStackView()
+    private let refreshControl = UIRefreshControl()
 
     private let bookingService = ProfileNetworkManager.shared
     private var allBookings: [SeasonTicketBooking] = []
@@ -40,6 +42,8 @@ final class SubscriptionManagementView: UIView {
 
         bookingService.fetchBookings(for: userId) { [weak self] result in
             DispatchQueue.main.async {
+                self?.refreshControl.endRefreshing()
+
                 switch result {
                 case .success(let bookings):
                     self?.allBookings = bookings
@@ -54,31 +58,45 @@ final class SubscriptionManagementView: UIView {
     private func setupUI() {
         backgroundColor = .systemBackground
 
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(scrollView)
+
+        NSLayoutConstraint.activate([
+            scrollView.topAnchor.constraint(equalTo: topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: bottomAnchor)
+        ])
+
+        contentStack.axis = .vertical
+        contentStack.spacing = 20
+        contentStack.alignment = .center
+        contentStack.translatesAutoresizingMaskIntoConstraints = false
+        
         bookingsStack.axis = .vertical
-        bookingsStack.spacing = 10
+        bookingsStack.spacing = 16
         bookingsStack.alignment = .fill
         bookingsStack.translatesAutoresizingMaskIntoConstraints = false
 
-        let stack = UIStackView(arrangedSubviews: [
-            loyaltyCardView,
-            bookingsStack
-        ])
-
-        stack.axis = .vertical
-        stack.spacing = 20
-        stack.alignment = .center
-        stack.translatesAutoresizingMaskIntoConstraints = false
-
-        addSubview(stack)
+        scrollView.addSubview(contentStack)
 
         NSLayoutConstraint.activate([
-            loyaltyCardView.widthAnchor.constraint(equalTo: widthAnchor, multiplier: 0.85),
-            bookingsStack.widthAnchor.constraint(equalTo: widthAnchor, multiplier: 0.85),
-
-            stack.centerXAnchor.constraint(equalTo: centerXAnchor),
-            stack.centerYAnchor.constraint(equalTo: centerYAnchor)
+            contentStack.topAnchor.constraint(equalTo: scrollView.topAnchor, constant: 20),
+            contentStack.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+            contentStack.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+            contentStack.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+            contentStack.widthAnchor.constraint(equalTo: widthAnchor)
         ])
+
+        contentStack.addArrangedSubview(loyaltyCardView)
+        contentStack.addArrangedSubview(bookingsStack)
+
+        loyaltyCardView.widthAnchor.constraint(equalTo: widthAnchor, multiplier: 0.85).isActive = true
+        bookingsStack.widthAnchor.constraint(equalTo: widthAnchor, multiplier: 0.85).isActive = true
+
+        setupRefresh()
     }
+
 
     private func updateBookingsListUI() {
         bookingsStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
@@ -247,5 +265,14 @@ final class SubscriptionManagementView: UIView {
             return UIImage(ciImage: scaled)
         }
         return nil
+    }
+    
+    private func setupRefresh() {
+        refreshControl.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
+        scrollView.refreshControl = refreshControl
+    }
+    
+    @objc private func handleRefresh() {
+        loadBookings()
     }
 }

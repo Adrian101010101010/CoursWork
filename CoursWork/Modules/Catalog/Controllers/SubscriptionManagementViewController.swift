@@ -12,6 +12,7 @@ final class SubscriptionManagementViewController: UIViewController, UITableViewD
     private let tableView = UITableView()
     private let viewModel = SubscriptionViewModel()
     private let titleLabel = UILabel()
+    private let refreshControl = UIRefreshControl()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -36,6 +37,10 @@ final class SubscriptionManagementViewController: UIViewController, UITableViewD
         tableView.register(SubscriptionItemCell.self, forCellReuseIdentifier: SubscriptionItemCell.identifier)
         tableView.backgroundColor = .clear
         tableView.separatorStyle = .none
+        refreshControl.tintColor = .systemBlue
+        refreshControl.addTarget(self, action: #selector(refreshTriggered), for: .valueChanged)
+        tableView.refreshControl = refreshControl
+
 
         NSLayoutConstraint.activate([
             titleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12),
@@ -190,4 +195,12 @@ extension SubscriptionManagementViewController: PKPaymentAuthorizationViewContro
     func paymentAuthorizationViewControllerDidFinish(_ controller: PKPaymentAuthorizationViewController) {
         controller.dismiss(animated: true)
     }
+    
+    @objc private func refreshTriggered() {
+        viewModel.fetchOffers()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            self.refreshControl.endRefreshing()
+        }
+    }
+
 }

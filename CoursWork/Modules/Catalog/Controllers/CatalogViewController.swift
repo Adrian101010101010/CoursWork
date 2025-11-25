@@ -11,6 +11,7 @@ final class CatalogViewController: UIViewController, UITableViewDataSource, UITa
     private let tableView = UITableView()
     private let filterView = CatalogFilterView()
     private let viewModel = CatalogViewModel(repository: SectionRepository())
+    private let refreshControl = UIRefreshControl()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -25,6 +26,9 @@ final class CatalogViewController: UIViewController, UITableViewDataSource, UITa
         view.addSubview(tableView)
         filterView.backgroundColor = .clear
         tableView.backgroundColor = .clear
+        refreshControl.tintColor = .white
+        refreshControl.addTarget(self, action: #selector(refreshTriggered), for: .valueChanged)
+        tableView.refreshControl = refreshControl
         tableView.dataSource = self
         tableView.delegate = self
         tableView.register(CatalogItemCell.self, forCellReuseIdentifier: CatalogItemCell.identifier)
@@ -76,5 +80,14 @@ final class CatalogViewController: UIViewController, UITableViewDataSource, UITa
         let reservationVC = ReservationViewController(section: section)
         navigationController?.pushViewController(reservationVC, animated: true)
     }
+    
+    @objc private func refreshTriggered() {
+        viewModel.fetchSections { [weak self] in
+            guard let self = self else { return }
+            self.tableView.reloadData()
+            self.refreshControl.endRefreshing()
+        }
+    }
+
 }
 

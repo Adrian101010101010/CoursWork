@@ -15,11 +15,26 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         window = UIWindow(windowScene: windowScene)
-//        if let _ = UserDefaults.standard.string(forKey: "idToken") {
-//            window?.rootViewController = MainTabBarController()
-//        } else {
-            window?.rootViewController = AuthViewController()
-//        }
+        let idToken = UserDefaults.standard.string(forKey: "idToken")
+           let status = UserDefaults.standard.string(forKey: "userStatus")
+
+           if idToken == nil {
+               window?.rootViewController = AuthViewController()
+           } else {
+               switch status {
+               case "Trainer":
+                   let vc = TrainerGymSectionViewController()
+                   window?.rootViewController = vc
+
+               case "Admin":
+                   let vc = AdminTabBarController()
+                   window?.rootViewController = vc
+
+               default:
+                   let vc = MainTabBarController()
+                   window?.rootViewController = vc
+               }
+           }
         window?.makeKeyAndVisible()
     }
 

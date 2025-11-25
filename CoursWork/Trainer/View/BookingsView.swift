@@ -20,10 +20,12 @@ final class BookingsView: UIView, UITableViewDelegate, UITableViewDataSource {
 
     private let tableView = UITableView()
     private var bookings: [Booking] = []
+    private let refreshControl = UIRefreshControl()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupUI()
+        setupRefresh()
         fetchBookings()
     }
 
@@ -41,6 +43,9 @@ final class BookingsView: UIView, UITableViewDelegate, UITableViewDataSource {
     private func fetchBookings() {
         NetworkManager.shared.getBookingUsers { result in
             DispatchQueue.main.async {
+                self.tableView.reloadData()
+                self.refreshControl.endRefreshing()
+
                 switch result {
                 case .success(let bookings):
                     self.bookings = bookings
@@ -61,5 +66,14 @@ final class BookingsView: UIView, UITableViewDelegate, UITableViewDataSource {
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
         cell.textLabel?.text = "\(booking.userName) — \(booking.date) @ \(booking.timeSlot)"
         return cell
+    }
+    
+    private func setupRefresh() {
+        tableView.refreshControl = refreshControl
+        refreshControl.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
+    }
+
+    @objc private func handleRefresh() {
+        fetchBookings()
     }
 }

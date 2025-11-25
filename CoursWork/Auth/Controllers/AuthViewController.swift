@@ -156,11 +156,16 @@ final class AuthViewController: UIViewController {
                     switch result {
                     case .success(let userIn):
                         UserDefaults.standard.set(userIn.token, forKey: "idToken")
+                        UserDefaults.standard.set(userIn.user.status, forKey: "userStatus")
                         
                         if userIn.user.status == "Trainer" {
                             let trainerVC = TrainerGymSectionViewController()
                             trainerVC.modalPresentationStyle = .fullScreen
                             self?.present(trainerVC, animated: true)
+                        } else if userIn.user.status == "Admin" {
+                            let adminVC = AdminTabBarController()
+                            adminVC.modalPresentationStyle = .fullScreen
+                            self?.present(adminVC, animated: true)
                         } else {
                             self?.showAlert(title: "Вхід виконано", message: "Ласкаво просимо!") {
                                 let mainTabBar = MainTabBarController()

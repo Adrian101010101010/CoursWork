@@ -9,14 +9,12 @@ import UIKit
 
 final class BookingHistoryView: UIView, UITableViewDataSource, UITableViewDelegate {
 
-    // MARK: - UI
     private let tableView = UITableView()
     private let activity = UIActivityIndicatorView(style: .large)
+    private let refreshControl = UIRefreshControl()
 
-    // MARK: - Data
     private var bookings: [Booking] = []
 
-    // MARK: - Init
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupTable()
@@ -26,12 +24,16 @@ final class BookingHistoryView: UIView, UITableViewDataSource, UITableViewDelega
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    // MARK: - UI Setup
     private func setupTable() {
         addSubview(tableView)
         tableView.dataSource = self
         tableView.delegate = self
         tableView.translatesAutoresizingMaskIntoConstraints = false
+        
+        refreshControl.tintColor = .systemBlue
+        refreshControl.addTarget(self, action: #selector(refreshTriggered), for: .valueChanged)
+        tableView.refreshControl = refreshControl
+
 
         NSLayoutConstraint.activate([
             tableView.topAnchor.constraint(equalTo: topAnchor),
@@ -50,7 +52,6 @@ final class BookingHistoryView: UIView, UITableViewDataSource, UITableViewDelega
         ])
     }
 
-    // MARK: - Load Data
     private func loadBookings() {
         guard let userId = UserDefaults.standard.string(forKey: "id") else { return }
         activity.startAnimating()
@@ -70,23 +71,23 @@ final class BookingHistoryView: UIView, UITableViewDataSource, UITableViewDelega
         }
     }
 
-    // MARK: - Table
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         bookings.count
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-
         let booking = bookings[indexPath.row]
 
         let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
-
-        // Title: section name OR sectionId
         cell.textLabel?.text = booking.sectionName ?? "Секція: \(booking.sectionId)"
-
-        // Subtitle: date + time
         cell.detailTextLabel?.text = "\(booking.date) • \(booking.timeSlot)"
-
         return cell
+    }
+    
+    @objc private func refreshTriggered() {
+        loadBookings()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.refreshControl.endRefreshing()
+        }
     }
 }
