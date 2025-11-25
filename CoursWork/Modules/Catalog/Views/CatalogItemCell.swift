@@ -31,6 +31,30 @@ struct CatalogItemView: View {
     @State private var animate = false
 
     var body: some View {
+        ZStack(alignment: .topTrailing) {
+
+            mainContent
+
+            if isNew {
+                Text("NEW")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.red)
+                    .clipShape(Capsule())
+                    .padding(8)
+                    .transition(.scale.combined(with: .opacity))
+            }
+        }
+    }
+
+    private var isNew: Bool {
+        guard let created = section.createdAt.toISODate() else { return false }
+        return created.isToday
+    }
+
+    private var mainContent: some View {
         HStack(spacing: 12) {
             Image("Logo")
                 .resizable()
@@ -95,4 +119,22 @@ struct CatalogItemView: View {
             }
             .compositingGroup()
         }
+}
+
+extension String {
+    func toISODate() -> Date? {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [
+            .withInternetDateTime,
+            .withFractionalSeconds
+        ]
+        return formatter.date(from: self)
+    }
+}
+
+
+extension Date {
+    var isToday: Bool {
+        Calendar.current.isDateInToday(self)
+    }
 }

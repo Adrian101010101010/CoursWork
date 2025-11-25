@@ -11,11 +11,13 @@ final class MySectionsView: UIView, UITableViewDelegate, UITableViewDataSource {
 
     private let tableView = UITableView()
     private var sections: [GymSection] = []
-
+    private let refreshControl = UIRefreshControl()
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
         print("MySectionsView init called")
         setupUI()
+        setupRefresh()
         fetchSections()
     }
 
@@ -40,6 +42,9 @@ final class MySectionsView: UIView, UITableViewDelegate, UITableViewDataSource {
 
         NetworkManager.shared.fetchSections { result in
             DispatchQueue.main.async { [weak self] in
+                self!.tableView.reloadData()
+                self!.refreshControl.endRefreshing()
+
                 guard let self = self else { return }
                 switch result {
                 case .success(let sections):
@@ -128,6 +133,15 @@ final class MySectionsView: UIView, UITableViewDelegate, UITableViewDataSource {
             }
         }
         return cell
+    }
+    
+    private func setupRefresh() {
+        tableView.refreshControl = refreshControl
+        refreshControl.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
+    }
+    
+    @objc private func handleRefresh() {
+        fetchSections()
     }
 }
 

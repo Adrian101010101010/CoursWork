@@ -11,6 +11,7 @@ final class SubscriptionsViewController: UIViewController {
 
     private let tableView = UITableView()
     private var subscriptions: [SubscriptionOffer] = []
+    private let refreshControl = UIRefreshControl()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -24,6 +25,7 @@ final class SubscriptionsViewController: UIViewController {
         )
 
         setupTableView()
+        setupRefresh()
         fetchSubscriptions()
     }
 
@@ -54,15 +56,27 @@ final class SubscriptionsViewController: UIViewController {
     private func fetchSubscriptions() {
         AdminNetworkManager.shared.getAllSubscriptions { result in
             DispatchQueue.main.async {
+                self.tableView.reloadData()
+                self.refreshControl.endRefreshing()
+
                 switch result {
                 case .success(let list):
                     self.subscriptions = list
                     self.tableView.reloadData()
                 case .failure(let error):
-                    print("❌ Error fetching subscriptions:", error)
+                    print("Error fetching subscriptions:", error)
                 }
             }
         }
+    }
+    
+    private func setupRefresh() {
+        tableView.refreshControl = refreshControl
+        refreshControl.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
+    }
+
+    @objc private func handleRefresh() {
+        fetchSubscriptions()
     }
 }
 

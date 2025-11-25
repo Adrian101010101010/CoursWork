@@ -9,8 +9,8 @@ import Foundation
 
 final class CatalogViewModel {
     private let repository: SectionRepositoryProtocol
-    private var allSections: [GymSection] = []      // усі секції з сервера
-    private var filteredSections: [GymSection] = [] // фільтровані
+    private var allSections: [GymSection] = []
+    private var filteredSections: [GymSection] = [] 
     
     init(repository: SectionRepositoryProtocol) {
         self.repository = repository

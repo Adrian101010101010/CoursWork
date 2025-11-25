@@ -13,6 +13,7 @@ final class TrainersViewController: UIViewController {
 
     private let tableView = UITableView()
     private var trainers: [Trainer] = []
+    private let refreshControl = UIRefreshControl()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -21,6 +22,7 @@ final class TrainersViewController: UIViewController {
 
         setupTableView()
         loadTrainers()
+        setupRefresh()
         setupLogout()
     }
 
@@ -43,6 +45,9 @@ final class TrainersViewController: UIViewController {
     private func loadTrainers() {
         AdminNetworkManager.shared.fetchTrainers { [weak self] result in
             DispatchQueue.main.async {
+                self!.tableView.reloadData()
+                self!.refreshControl.endRefreshing()
+
                 switch result {
                 case .success(let trainers):
                     self?.trainers = trainers
@@ -94,6 +99,15 @@ final class TrainersViewController: UIViewController {
             window.rootViewController = nav
             window.makeKeyAndVisible()
         }
+    }
+    
+    private func setupRefresh() {
+        tableView.refreshControl = refreshControl
+        refreshControl.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
+    }
+
+    @objc private func handleRefresh() {
+        loadTrainers()
     }
 }
 
