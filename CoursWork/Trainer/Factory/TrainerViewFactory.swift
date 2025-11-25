@@ -22,11 +22,7 @@ final class TrainerViewFactory {
         case .view:
             return MySectionsView()
         case .records:
-            let label = UILabel()
-            label.text = "View Records"
-            label.textAlignment = .center
-            label.backgroundColor = .systemOrange
-            return label
+            return BookingsView()
         }
     }
 }

@@ -20,6 +20,7 @@ final class ProfileViewController: UIViewController {
         title = "Мій кабінет"
         view.backgroundColor = .systemBackground
         setupUI()
+        setupLogout()
         switchToView(bookingHistoryView)
     }
 
@@ -63,5 +64,47 @@ final class ProfileViewController: UIViewController {
             newView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
             newView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
         ])
+    }
+    
+    private func setupLogout() {
+        if navigationController != nil {
+            let logoutButton = UIBarButtonItem(
+                image: UIImage(systemName: "rectangle.portrait.and.arrow.right"),
+                style: .plain,
+                target: self,
+                action: #selector(logoutTapped)
+            )
+            navigationItem.rightBarButtonItem = logoutButton
+        } else {            let button = UIButton(type: .system)
+            button.setImage(UIImage(systemName: "rectangle.portrait.and.arrow.right"), for: .normal)
+            button.tintColor = .label
+            button.addTarget(self, action: #selector(logoutTapped), for: .touchUpInside)
+            button.translatesAutoresizingMaskIntoConstraints = false
+            view.addSubview(button)
+            
+            NSLayoutConstraint.activate([
+                button.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
+                button.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+                button.widthAnchor.constraint(equalToConstant: 32),
+                button.heightAnchor.constraint(equalToConstant: 32)
+            ])
+        }
+    }
+    
+    @objc private func logoutTapped() {
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: "id")
+        defaults.removeObject(forKey: "idToken")
+        defaults.synchronize()
+        
+        let authVC = AuthViewController()
+        let nav = UINavigationController(rootViewController: authVC)
+        nav.modalPresentationStyle = .fullScreen
+        
+        if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = scene.windows.first {
+            window.rootViewController = nav
+            window.makeKeyAndVisible()
+        }
     }
 }

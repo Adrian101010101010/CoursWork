@@ -25,7 +25,6 @@ final class NetworkManager {
     static let shared = NetworkManager()
     private init() {}
     private let baseURL = "https://us-central1-curce-work-backend.cloudfunctions.net/subscription"
-    private let sectionURL = "https://us-central1-curce-work-backend.cloudfunctions.net/mySection"
     
     func createGymSection(_ section: [String: Any], completion: @escaping (Result<String, Error>) -> Void) {
         guard let url = URL(string: "https://us-central1-curce-work-backend.cloudfunctions.net/createGymSection") else {
@@ -112,107 +111,95 @@ final class NetworkManager {
     private let urlString = "https://us-central1-curce-work-backend.cloudfunctions.net/getGymSections"
 
     func fetchSections(completion: @escaping (Result<[GymSection], Error>) -> Void) {
-
         guard let token = UserDefaults.standard.string(forKey: "idToken"), !token.isEmpty else {
             completion(.failure(NSError(domain: "", code: 401, userInfo: [NSLocalizedDescriptionKey: "Unauthorized: missing token"])))
             return
         }
-
         guard let currentUserId = UserDefaults.standard.string(forKey: "id") else {
             completion(.failure(NSError(domain: "", code: 401, userInfo: [NSLocalizedDescriptionKey: "Missing user ID"])))
             return
         }
-
         guard let url = URL(string: urlString) else {
             completion(.failure(NSError(domain: "", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
             return
         }
-
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
         URLSession.shared.dataTask(with: request) { data, response, error in
-
             if let error = error {
                 completion(.failure(error))
                 return
             }
-
             guard let httpResponse = response as? HTTPURLResponse,
                   let data = data else {
                 completion(.failure(NSError(domain: "", code: 0, userInfo: [NSLocalizedDescriptionKey: "No response data"])))
                 return
             }
-
             guard (200...299).contains(httpResponse.statusCode) else {
                 let bodyString = String(data: data, encoding: .utf8) ?? ""
                 completion(.failure(NSError(domain: "", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Server error: \(bodyString)"])))
                 return
             }
-
             do {
                 let decoder = JSONDecoder()
                 decoder.dateDecodingStrategy = .iso8601
                 let allSections = try decoder.decode([GymSection].self, from: data)
-
-                // 🔥 Фільтрація за createdBy
                 let filtered = allSections.filter { $0.createdBy == currentUserId }
-
                 completion(.success(filtered))
-
             } catch {
                 if let jsonStr = String(data: data, encoding: .utf8) {
                     print("JSON from server:", jsonStr)
                 }
                 completion(.failure(error))
             }
-
         }.resume()
     }
 
-
-
-    
-    func createOrUpdateSection(_ section: GymSectionTrainer, completion: @escaping (Result<GymSectionTrainer, Error>) -> Void) {
-            guard let url = URL(string: "\(sectionURL)/sections") else { return }
-
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-
-            do {
-                let bodyData = try JSONEncoder().encode(section)
-                request.httpBody = bodyData
-            } catch {
+    func editSection(id: String, updates: [String: Any], completion: @escaping (Result<Void, Error>) -> Void) {
+        guard let token = UserDefaults.standard.string(forKey: "idToken") else {
+            completion(.failure(NSError(domain: "", code: 401, userInfo: [NSLocalizedDescriptionKey: "Missing token"])))
+            return
+        }
+        guard let url = URL(string: "https://us-central1-curce-work-backend.cloudfunctions.net/editGymSections/gymSections/\(id)") else {
+            completion(.failure(NSError(domain: "", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
+            return
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: updates, options: [])
+        } catch {
+            completion(.failure(error))
+            return
+        }
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
                 completion(.failure(error))
                 return
             }
-
-            URLSession.shared.dataTask(with: request) { data, _, error in
-                if let error = error {
-                    completion(.failure(error))
-                    return
-                }
-
-                guard let data = data else { return }
-
-                do {
-                    let section = try JSONDecoder().decode(GymSectionTrainer.self, from: data)
-                    completion(.success(section))
-                } catch {
-                    completion(.failure(error))
-                }
-            }.resume()
+            guard let httpResponse = response as? HTTPURLResponse else {
+                completion(.failure(NSError(domain: "", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid response"])))
+                return
+            }
+            guard (200...299).contains(httpResponse.statusCode) else {
+                let err = String(data: data ?? Data(), encoding: .utf8) ?? "Unknown error"
+                completion(.failure(NSError(domain: "", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: err])))
+                return
+            }
+            completion(.success(()))
         }
-    
+        .resume()
+    }
+
     func deleteSection(id: String, completion: @escaping (Result<Void, Error>) -> Void) {
         guard let token = UserDefaults.standard.string(forKey: "idToken") else {
             completion(.failure(NSError(domain: "", code: 401, userInfo: [NSLocalizedDescriptionKey: "Missing token"])))
             return
         }
 
-        // Змінено URL: передаємо ID через query ?id=...
         guard let url = URL(string: "https://us-central1-curce-work-backend.cloudfunctions.net/deleteGymSection?id=\(id)") else {
             completion(.failure(NSError(domain: "", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
             return
@@ -243,4 +230,36 @@ final class NetworkManager {
         }
         .resume()
     }
+    
+    func getBookingUsers(completion: @escaping (Result<[Booking], Error>) -> Void) {
+        guard let token = UserDefaults.standard.string(forKey: "idToken"),
+              let url = URL(string: "https://us-central1-curce-work-backend.cloudfunctions.net/getBookingUsers/bookings/users") else {
+            completion(.failure(NSError(domain: "", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid URL or missing token"])))
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let data = data else {
+                completion(.failure(NSError(domain: "", code: 0, userInfo: [NSLocalizedDescriptionKey: "No data"])))
+                return
+            }
+
+            do {
+                let bookings = try JSONDecoder().decode([Booking].self, from: data)
+                completion(.success(bookings))
+            } catch {
+                completion(.failure(error))
+            }
+        }.resume()
+    }
+
 }

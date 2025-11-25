@@ -21,6 +21,7 @@ final class ReservationViewController: UIViewController, PKPaymentAuthorizationV
     private var pendingUserName: String?
     private var pendingDate: Date?
     private var pendingTimeSlot: String?
+    private var payWithPoints = false
     
     init(section: GymSection) {
         self.section = section
@@ -95,39 +96,85 @@ final class ReservationViewController: UIViewController, PKPaymentAuthorizationV
             formView.centerXAnchor.constraint(equalTo: view.centerXAnchor)
         ])
         
-        formView.onConfirm = { [weak self] name, date, timeSlot in
-            self?.startApplePay(name: name, date: date, timeSlot: timeSlot)
+        formView.onConfirm = { [weak self] name, date, timeSlot, usePoints in
+            self?.payWithPoints = usePoints
+            self?.startPaymentFlow(name: name, date: date, timeSlot: timeSlot)
         }
     }
-    
-    private func startApplePay(name: String, date: Date, timeSlot: String) {
+    private func startPaymentFlow(name: String, date: Date, timeSlot: String) {
         pendingUserName = name
         pendingDate = date
         pendingTimeSlot = timeSlot
-        
+
+        let priceUAH = section.price
+        let userPoints = UserRepository.shared.getUserProfile().bonusPoints
+        let pointsAsUAH =  Double(userPoints) / 100
+
+        if payWithPoints {
+            if pointsAsUAH > priceUAH {
+                UserRepository.shared.updateBonusPoints(by: -(Int(priceUAH) * 100))
+                finishBookingWithoutPayment()
+                return
+            } else {
+                let bonusCoveredUAH = pointsAsUAH
+                let remainingUAH = priceUAH - bonusCoveredUAH
+
+                UserRepository.shared.updateBonusPoints(by: -(userPoints))
+
+                startApplePay(amount: Int(remainingUAH))
+                return
+            }
+        }
+
+        startApplePay(amount: Int(priceUAH))
+    }
+
+    
+    private func startApplePay(amount: Int) {
         guard PKPaymentAuthorizationViewController.canMakePayments(usingNetworks: [.visa, .masterCard, .amex]) else {
-            let alert = UIAlertController(title: "Помилка", message: "Apple Pay недоступний на цьому пристрої", preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "OK", style: .default))
-            present(alert, animated: true)
+            showAlert(title: "Помилка", message: "Apple Pay недоступний")
             return
         }
-         
-        let paymentRequest = PKPaymentRequest()
-        paymentRequest.merchantIdentifier = "your.merchant.id"
-        paymentRequest.supportedNetworks = [.visa, .masterCard, .amex]
-        paymentRequest.merchantCapabilities = .capability3DS
-        paymentRequest.countryCode = "UA"
-        paymentRequest.currencyCode = "UAH"
 
-        let price = NSDecimalNumber(value: section.price)
-        paymentRequest.paymentSummaryItems = [
-            PKPaymentSummaryItem(label: section.name, amount: price)
-        ]
-        
-        guard let paymentVC = PKPaymentAuthorizationViewController(paymentRequest: paymentRequest) else { return }
-        paymentVC.delegate = self
-        present(paymentVC, animated: true)
+        let request = PKPaymentRequest()
+        request.merchantIdentifier = "your.merchant.id"
+        request.supportedNetworks = [.visa, .masterCard, .amex]
+        request.merchantCapabilities = .capability3DS
+        request.countryCode = "UA"
+        request.currencyCode = "UAH"
+
+        let summary = PKPaymentSummaryItem(label: section.name, amount: NSDecimalNumber(value: amount))
+        request.paymentSummaryItems = [summary]
+
+        guard let vc = PKPaymentAuthorizationViewController(paymentRequest: request) else { return }
+        vc.delegate = self
+        present(vc, animated: true)
     }
+
+    private func finishBookingWithoutPayment() {
+        guard let userId = UserDefaults.standard.string(forKey: "id"),
+              let name = pendingUserName,
+              let date = pendingDate,
+              let timeSlot = pendingTimeSlot else { return }
+
+        bookingService.createBooking(
+            userId: userId,
+            sectionId: section.id,
+            userName: name,
+            date: date,
+            timeSlot: timeSlot
+        ) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    self.showAlert(title: "Успіх", message: "Бронювання оплачено бонусами")
+                case .failure:
+                    self.showAlert(title: "Помилка", message: "Не вдалося створити бронювання")
+                }
+            }
+        }
+    }
+
 
     func paymentAuthorizationViewController(_ controller: PKPaymentAuthorizationViewController, didAuthorizePayment payment: PKPayment, handler completion: @escaping (PKPaymentAuthorizationResult) -> Void) {
         guard let userId = UserDefaults.standard.string(forKey: "id"),

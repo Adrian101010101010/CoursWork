@@ -39,7 +39,8 @@ final class MySectionsView: UIView, UITableViewDelegate, UITableViewDataSource {
         print("Fetching sections for userId:", userId)
 
         NetworkManager.shared.fetchSections { result in
-            DispatchQueue.main.async {
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
                 switch result {
                 case .success(let sections):
                     print("Fetched sections:", sections.map { $0.name })
@@ -65,9 +66,46 @@ final class MySectionsView: UIView, UITableViewDelegate, UITableViewDataSource {
         cell.nameLabel.text = section.name
         cell.priceLabel.text = "$\(section.price)"
         
-        cell.editAction = {
-            print("Edit tapped for", section.name)
+        cell.editAction = { [weak self] in
+            guard let self = self,
+                  let parentVC = self.parentViewController else { return }
+
+            let vc = EditSectionViewController(section: section)
+
+            vc.onSave = { updatedSection in
+                let id = updatedSection.id
+
+                let updates: [String: Any] = [
+                    "name": updatedSection.name,
+                    "price": updatedSection.price,
+                    "difficulty": updatedSection.difficulty.rawValue,
+                    "sportType": updatedSection.sportType.rawValue,
+                    "minAge": updatedSection.minAge,
+                    "maxAge": updatedSection.maxAge,
+                    "isPremium": updatedSection.isPremium
+                ]
+
+                NetworkManager.shared.editSection(id: id, updates: updates) { result in
+                    DispatchQueue.main.async {
+                        switch result {
+                        case .success:
+                            if let index = self.sections.firstIndex(where: { $0.id == id }) {
+                                self.sections[index] = updatedSection
+                                self.tableView.reloadRows(at: [IndexPath(row: index, section: 0)], with: .automatic)
+                            }
+                        case .failure(let error):
+                            print("Error editing:", error)
+                        }
+                    }
+                }
+            }
+            print("parentVC =", self.parentViewController as Any)
+            print("nav =", parentVC.navigationController as Any)
+
+            parentVC.present(vc, animated: true)
         }
+
+
         cell.deleteAction = { [weak self, weak tableView] in
             print("Delete tapped for", section.name)
             guard let self = self, let tableView = tableView else { return }
@@ -90,5 +128,18 @@ final class MySectionsView: UIView, UITableViewDelegate, UITableViewDataSource {
             }
         }
         return cell
+    }
+}
+
+extension UIView {
+    var parentViewController: UIViewController? {
+        var parentResponder: UIResponder? = self
+        while let next = parentResponder?.next {
+            parentResponder = next
+            if let vc = parentResponder as? UIViewController {
+                return vc
+            }
+        }
+        return nil
     }
 }
