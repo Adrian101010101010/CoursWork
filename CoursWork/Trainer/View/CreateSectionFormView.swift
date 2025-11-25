@@ -153,30 +153,30 @@ final class CreateSectionFormView: UIView, UIPickerViewDelegate, UIPickerViewDat
             .split(separator: ",")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
 
-        if isSubscriptionSwitch.isOn {
-            guard let type = subscriptionTypeField.text else {
-                showToast("Оберіть тип підписки!", isError: true)
-                return
-            }
-
-            NetworkManager.shared.createSubscriptionOffer(
-                name: name,
-                type: type,
-                price: String(price),
-                perks: perks,
-                isPremium: isPremiumSwitch.isOn
-            ) { result in
-                DispatchQueue.main.async {
-                    switch result {
-                    case .success:
-                        self.showToast("Subscription created!", isError: false)
-                    case .failure:
-                        self.showToast("Помилка створення!", isError: true)
-                    }
-                }
-            }
-            return
-        }
+//        if isSubscriptionSwitch.isOn {
+//            guard let type = subscriptionTypeField.text else {
+//                showToast("Оберіть тип підписки!", isError: true)
+//                return
+//            }
+//
+//            NetworkManager.shared.createSubscriptionOffer(
+//                name: name,
+//                type: type,
+//                price: String(price),
+//                perks: perks,
+//                isPremium: isPremiumSwitch.isOn
+//            ) { result in
+//                DispatchQueue.main.async {
+//                    switch result {
+//                    case .success:
+//                        self.showToast("Subscription created!", isError: false)
+//                    case .failure:
+//                        self.showToast("Помилка створення!", isError: true)
+//                    }
+//                }
+//            }
+//            return
+//        }
 
         let sportType = sportTypeField.text ?? "fitness"
 
