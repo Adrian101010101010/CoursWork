@@ -26,4 +26,14 @@ final class AdminModuleFactory {
         vc.tabBarItem = UITabBarItem(title: "Створити", image: UIImage(systemName: "plus.circle"), selectedImage: nil)
         return UINavigationController(rootViewController: vc)
     }
+    
+    func makeGyms() -> UIViewController {
+        let vc = GymsViewController()
+        if #available(iOS 15.0, *) {
+            vc.tabBarItem = UITabBarItem(title: "Зали", image: UIImage(systemName: "dumbbell"), selectedImage: nil)
+        } else {
+            vc.tabBarItem = UITabBarItem(title: "Зали", image: UIImage(systemName: "sportscourt"), selectedImage: UIImage(systemName: "sportscourt.fill"))
+        }
+        return UINavigationController(rootViewController: vc)
+    }
 }

@@ -17,7 +17,8 @@ final class AdminTabBarController: UITabBarController {
         viewControllers = [
             factory.makeTrainers(),
             factory.makeSubscriptions(),
-            factory.makeCreate()
+            factory.makeCreate(),
+            factory.makeGyms()
         ]
 
         tabBar.backgroundColor = .systemBackground

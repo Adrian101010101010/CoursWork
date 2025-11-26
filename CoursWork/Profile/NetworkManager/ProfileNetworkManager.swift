@@ -14,7 +14,6 @@ final class ProfileNetworkManager {
 
     private let baseURL = "https://us-central1-curce-work-backend.cloudfunctions.net"
 
-    // MARK: - Fetch User Bookings
     func fetchUserBookings(userId: String, completion: @escaping (Result<[Booking], Error>) -> Void) {
 
         guard var urlComponents = URLComponents(string: "\(baseURL)/getUserBookings") else {
@@ -126,7 +125,6 @@ final class ProfileNetworkManager {
         req.httpMethod = "GET"
         req.setValue("application/json", forHTTPHeaderField: "Accept")
 
-        // Додати Firebase Auth токен
         if let idToken = UserDefaults.standard.string(forKey: "idToken") {
             req.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
         }
@@ -138,7 +136,6 @@ final class ProfileNetworkManager {
                 }
                 let status = (resp as? HTTPURLResponse)?.statusCode ?? -1
 
-                // Raw debug print
                 if let data = data, let raw = String(data: data, encoding: .utf8) {
                     print("🔵 fetchBookings raw response (status \(status)):\n\(raw)\n--- end raw ---")
                 } else {
@@ -149,36 +146,32 @@ final class ProfileNetworkManager {
                     completion(.success([])); return
                 }
 
-                // Try decode as array of bookings first
                 do {
                     let decoder = JSONDecoder()
-                    decoder.dateDecodingStrategy = .secondsSince1970 // або .millisecondsSince1970, залежить від timestamp
+                    decoder.dateDecodingStrategy = .secondsSince1970
                     let bookings = try decoder.decode([SeasonTicketBooking].self, from: data)
                     completion(.success(bookings))
                     return
                 } catch {
                     print("⚠️ JSONDecoder failed to decode [SeasonTicketBooking]:", error)
-                    // fallback to JSONSerialization
                 }
 
-                // Fallback: inspect JSON structure (array or object)
                 do {
                     let obj = try JSONSerialization.jsonObject(with: data, options: [])
                     if let arr = obj as? [[String: Any]] {
                         let models: [SeasonTicketBooking] = arr.compactMap { dict in
                             guard let jsonData = try? JSONSerialization.data(withJSONObject: dict) else { return nil }
                             let decoder = JSONDecoder()
-                            decoder.dateDecodingStrategy = .millisecondsSince1970 // або secondsSince1970
+                            decoder.dateDecodingStrategy = .millisecondsSince1970
                             return try? decoder.decode(SeasonTicketBooking.self, from: jsonData)
                         }
                         completion(.success(models))
                     } else if let dict = obj as? [String: Any] {
-                        // if server wraps under "bookings" or "data"
                         if let innerArr = dict["bookings"] as? [[String: Any]] {
                             let models: [SeasonTicketBooking] = innerArr.compactMap { dict in
                                 guard let jsonData = try? JSONSerialization.data(withJSONObject: dict) else { return nil }
                                 let decoder = JSONDecoder()
-                                decoder.dateDecodingStrategy = .millisecondsSince1970 // або .secondsSince1970
+                                decoder.dateDecodingStrategy = .millisecondsSince1970
                                 return try? decoder.decode(SeasonTicketBooking.self, from: jsonData)
                             }
                             completion(.success(models))
@@ -202,7 +195,6 @@ final class ProfileNetworkManager {
                             completion(.success(models))
                             return
                         } else {
-                            // single booking object
                             guard let jsonData = try? JSONSerialization.data(withJSONObject: dict) else {
                                 completion(.success([]))
                                 return
@@ -217,7 +209,6 @@ final class ProfileNetworkManager {
                             return
                         }
                     }
-                    // Unknown format
                     completion(.success([]))
                 } catch {
                     completion(.failure(error))
