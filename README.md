@@ -3,8 +3,8 @@ Use Case
 
 
 Class diagram
+<img width="783" height="773" alt="image" src="https://github.com/user-attachments/assets/0fe946e3-c062-46bb-9516-74dfda56fe0f" />
 
-<img width="807" height="775" alt="image" src="https://github.com/user-attachments/assets/f36b18c5-a949-4d84-9cba-be07ab80aa43" />
 
 
 
