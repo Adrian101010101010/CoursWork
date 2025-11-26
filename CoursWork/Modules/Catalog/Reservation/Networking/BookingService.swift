@@ -19,7 +19,6 @@ final class BookingService {
     ) {
         guard let url = URL(string: "https://us-central1-curce-work-backend.cloudfunctions.net/api/bookings") else { return }
 
-        // Беремо токен із UserDefaults
         guard let idToken = UserDefaults.standard.string(forKey: "idToken") else {
             completion(.failure(NSError(domain: "NoToken", code: 401)))
             return

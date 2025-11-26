@@ -11,6 +11,7 @@ final class AdminNetworkManager {
     static let shared = AdminNetworkManager()
     private init() {}
     private let baseURL = "https://us-central1-curce-work-backend.cloudfunctions.net/subscription"
+    private let baseGymURL = "https://us-central1-curce-work-backend.cloudfunctions.net/gyms"
     
     func createSubscriptionOffer(
         name: String,
@@ -226,9 +227,13 @@ final class AdminNetworkManager {
         firstName: String,
         name: String,
         email: String,
+        password: String,
         age: Int,
         height: Int,
         weight: Int,
+        gym: String,
+        bio: String,
+        experience: String,
         completion: @escaping (Result<Trainer, Error>) -> Void
     ) {
         guard let url = URL(string: "\(baseTrainerURL)/users/trainers") else {
@@ -244,9 +249,13 @@ final class AdminNetworkManager {
             "firstName": firstName,
             "name": name,
             "email": email,
+            "password": password,
             "age": age,
             "height": height,
-            "weight": weight
+            "weight": weight,
+            "gym": gym,
+            "bio": bio,
+            "experience": experience
         ]
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
@@ -267,5 +276,153 @@ final class AdminNetworkManager {
             }
         }.resume()
     }
+    
+    func createGym(
+        name: String,
+        address: String,
+        halls: [[String: Any]] = [],
+        completion: @escaping (Result<[String: Any], Error>) -> Void
+    ) {
+        guard let url = URL(string: baseGymURL) else {
+            completion(.failure(NSError(domain: "", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
+            return
+        }
 
+        guard let token = UserDefaults.standard.string(forKey: "idToken") else {
+            completion(.failure(NSError(domain: "", code: 401, userInfo: [NSLocalizedDescriptionKey: "Unauthorized: No token"])))
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let body: [String: Any] = [
+            "id": UUID().uuidString,
+            "name": name,
+            "address": address,
+            "halls": halls
+        ]
+
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+        if let error = error {
+        completion(.failure(error))
+        return
+        }
+        guard let data = data else {
+            completion(.failure(NSError(domain: "", code: 0, userInfo: [NSLocalizedDescriptionKey: "No data"])))
+            return
+        }
+
+        do {
+            let json = try JSONSerialization.jsonObject(with: data)
+            if let dict = json as? [String: Any] {
+                completion(.success(dict))
+            } else if let array = json as? [[String: Any]] {
+                completion(.success(["response": array]))
+            } else {
+                completion(.failure(NSError(domain: "", code: 0, userInfo: [NSLocalizedDescriptionKey: "Unexpected JSON format"])))
+            }
+        } catch {
+            completion(.failure(error))
+        }
+        }.resume()
+    }
+
+    func getAllGyms(completion: @escaping (Result<[Gym], Error>) -> Void) {
+        guard let url = URL(string: baseGymURL) else { return }
+        guard let token = UserDefaults.standard.string(forKey: "idToken") else {
+            completion(.failure(NSError(domain: "", code: 401, userInfo: [NSLocalizedDescriptionKey: "No token"])))
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let data = data else {
+                completion(.failure(NSError(domain: "", code: 0, userInfo: [NSLocalizedDescriptionKey: "No data"])))
+                return
+            }
+
+            do {
+                let gyms = try JSONDecoder().decode([Gym].self, from: data)
+                completion(.success(gyms))
+            } catch {
+                completion(.failure(error))
+            }
+        }.resume()
+    }
+
+
+    func deleteGym(id: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        guard let encodedId = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
+              let url = URL(string: "\(baseGymURL)/\(encodedId)") else {
+            completion(.failure(NSError(domain: "", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid Gym ID"])))
+            return
+        }
+        
+        guard let token = UserDefaults.standard.string(forKey: "idToken") else {
+            completion(.failure(NSError(domain: "", code: 401, userInfo: [NSLocalizedDescriptionKey: "Unauthorized: No token"])))
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        URLSession.shared.dataTask(with: request) { _, _, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            completion(.success(()))
+        }.resume()
+    }
+
+    func updateGym(id: String, name: String, address: String, halls: [Hall], completion: @escaping (Result<Void, Error>) -> Void) {
+        guard let encodedId = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
+              let url = URL(string: "\(baseGymURL)/\(encodedId)") else {
+            completion(.failure(NSError(domain: "", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid Gym ID"])))
+            return
+        }
+        
+        guard let token = UserDefaults.standard.string(forKey: "idToken") else {
+            completion(.failure(NSError(domain: "", code: 401, userInfo: [NSLocalizedDescriptionKey: "Unauthorized: No token"])))
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let encoder = JSONEncoder()
+        do {
+            let body = GymUpdateRequest(name: name, address: address, halls: halls)
+            let bodyData = try encoder.encode(body)
+            request.httpBody = bodyData
+        } catch {
+            completion(.failure(error))
+            return
+        }
+
+        URLSession.shared.dataTask(with: request) { _, _, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            completion(.success(()))
+        }.resume()
+    }
 }
+

@@ -69,6 +69,10 @@ final class ReservationViewController: UIViewController, PKPaymentAuthorizationV
         addInfoRow(title: "Difficulty", value: viewModel.difficulty)
         addInfoRow(title: "Age Range", value: viewModel.ageRange)
         addInfoRow(title: "Premium", value: viewModel.isPremium ? "Yes" : "No")
+        addInfoRow(title: "trainerName", value: viewModel.trainerName)
+        addInfoRow(title: "Gym", value: viewModel.gymName)
+        addInfoRow(title: "Address", value: viewModel.gymAddress)
+        addInfoRow(title: "Halls", value: viewModel.gymHallsDescription)
     }
     
     private func addInfoRow(title: String, value: String) {

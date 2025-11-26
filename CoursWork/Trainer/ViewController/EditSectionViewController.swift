@@ -115,7 +115,9 @@ final class EditSectionViewController: UIViewController {
             isPremium: isPremiumSwitch.isOn,
             createdAt: section.createdAt,
             price: price,
-            createdBy: section.createdBy
+            createdBy: section.createdBy,
+            trainerName: section.trainerName,
+            gym: section.gym
         )
 
         onSave?(section)

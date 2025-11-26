@@ -20,6 +20,7 @@ final class CreateSectionFormView: UIView, UIPickerViewDelegate, UIPickerViewDat
     private let minAgeField = UITextField()
     private let maxAgeField = UITextField()
     private let priceField = UITextField()
+    private let quantityField = UITextField()
 
     private let perksTextView = UITextView()
     private let isPremiumSwitch = UISwitch()
@@ -68,6 +69,7 @@ final class CreateSectionFormView: UIView, UIPickerViewDelegate, UIPickerViewDat
             labeledField("Min Age", minAgeField),
             labeledField("Max Age", maxAgeField),
             labeledField("Price", priceField),
+            labeledField("Quantity", quantityField),
             labeledSwitch("Premium", isPremiumSwitch),
             submitButton
         ])
@@ -83,7 +85,7 @@ final class CreateSectionFormView: UIView, UIPickerViewDelegate, UIPickerViewDat
             stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20)
         ])
 
-        [nameField, sportTypeField, difficultyField, minAgeField, maxAgeField, priceField]
+        [nameField, sportTypeField, difficultyField, minAgeField, maxAgeField, priceField, quantityField]
             .forEach {
                 $0.borderStyle = .roundedRect
                 $0.heightAnchor.constraint(equalToConstant: 38).isActive = true
@@ -126,6 +128,7 @@ final class CreateSectionFormView: UIView, UIPickerViewDelegate, UIPickerViewDat
             let minAge = Int(minAgeField.text ?? ""),
             let maxAge = Int(maxAgeField.text ?? ""),
             let price = Double(priceField.text ?? ""),
+            let quantity = Int(quantityField.text ?? ""),
             let userId = UserDefaults.standard.string(forKey: "id")
         else {
             showToast("Заповніть усі поля!", isError: true)
@@ -146,6 +149,7 @@ final class CreateSectionFormView: UIView, UIPickerViewDelegate, UIPickerViewDat
             "maxAge": maxAge,
             "isPremium": isPremiumSwitch.isOn,
             "price": price,
+            "quantity": quantity,
             "createdBy": userId,
             "perks": perks
         ]
